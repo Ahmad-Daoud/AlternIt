@@ -1,3 +1,4 @@
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -61,6 +62,7 @@ fun ContactList(contacts: List<Contact>) {
     }
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun MyApp(context: Context) {
     var showDialog by remember { mutableStateOf(false) }
@@ -286,7 +288,5 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     val context = LocalContext.current
-    AlternItTheme {
-        MyApp(context)
-    }
+    AlternItTheme { MyApp(context) }
 }
