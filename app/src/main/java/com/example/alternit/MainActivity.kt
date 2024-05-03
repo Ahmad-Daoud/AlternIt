@@ -1,3 +1,4 @@
+package com.example.alternit
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import android.util.Log
 import com.example.alternit.R
 import com.example.alternit.ui.theme.AlternItTheme
 import androidx.compose.foundation.layout.padding
@@ -21,18 +23,11 @@ import androidx.compose.material3.Text
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
-import java.io.FileWriter
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.ui.platform.LocalContext
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.res.painterResource
-import com.example.alternit.ui.theme.AlternItTheme
+
 
 
 class MainActivity : ComponentActivity() {
@@ -48,7 +43,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 
 @Composable
 fun ContactList(contacts: List<Contact>) {
@@ -66,11 +60,11 @@ fun ContactList(contacts: List<Contact>) {
 @Composable
 fun MyApp(context: Context) {
     var showDialog by remember { mutableStateOf(false) }
-    var contacts by remember { mutableStateOf(emptyList<Contact>()) }
+    val contactsState = remember { mutableStateOf(emptyList<Contact>()) }
 
     // Read contacts when MyApp is recomposed
     LaunchedEffect(Unit) {
-        contacts = readContactsFromJson(context)
+        refreshContactList(context, contactsState)
     }
 
     Scaffold(
@@ -95,20 +89,23 @@ fun MyApp(context: Context) {
         },
         floatingActionButtonPosition = FabPosition.Center
     ) {
-        Greeting("Android")
+        ContactList(contacts = contactsState.value)
+
         if (showDialog) {
             AddItemDialog(
                 onClose = { showDialog = false },
                 context = context,
-                onContactAdded = {
-                    // Refresh the list of contacts after a contact is added
-                    contacts = readContactsFromJson(context)
-                }
+                onContactAdded = { refreshContactList(context, contactsState) } // Refresh the contact list
             )
         }
-        ContactList(contacts = contacts)
     }
 }
+
+fun refreshContactList(context: Context, contactsState: MutableState<List<Contact>>) {
+    contactsState.value = readContactsFromJson(context)
+}
+
+
 
 // Data class to represent a contact
 data class Contact(
@@ -122,8 +119,10 @@ data class Contact(
 // Function to read contacts from JSON file
 fun readContactsFromJson(context: Context): List<Contact> {
     val contacts = mutableListOf<Contact>()
+    println("start contacts : \n")
     try {
         val jsonString = context.openFileInput("contacts.json").bufferedReader().use { it.readText() }
+        Log.d("JSON_CONTENT", jsonString) // Add this line to print JSON content
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val jsonObject = jsonArray.getJSONObject(i)
@@ -138,6 +137,7 @@ fun readContactsFromJson(context: Context): List<Contact> {
     } catch (e: Exception) {
         e.printStackTrace()
     }
+    println("End contacts : \n")
     return contacts
 }
 
@@ -149,13 +149,25 @@ fun writeContactToJson(context: Context, contactName: String, lastName: String, 
         put("entreprise", company)
     }
 
-    val jsonArray = JSONArray().apply {
-        put(contactObject)
-    }
-
-    val jsonString = jsonArray.toString()
-
     try {
+        // Read existing contacts
+        val existingContacts = readContactsFromJson(context).toMutableList()
+
+        // Add the new contact
+        existingContacts.add(Contact(contactName, lastName, phoneNumber, company))
+
+        // Convert the list to JSON array
+        val jsonArray = JSONArray(existingContacts.map { contact ->
+            JSONObject().apply {
+                put("prenom", contact.firstName)
+                put("nom", contact.lastName)
+                put("telephone", contact.phoneNumber)
+                put("entreprise", contact.company)
+            }
+        })
+
+        // Write the JSON array to file
+        val jsonString = jsonArray.toString()
         val fileOutputStream = context.openFileOutput("contacts.json", Context.MODE_PRIVATE)
         fileOutputStream.write(jsonString.toByteArray())
         fileOutputStream.close()
@@ -279,10 +291,7 @@ fun AddItemDialog(
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
 
-}
 
 @Preview(showBackground = true)
 @Composable
