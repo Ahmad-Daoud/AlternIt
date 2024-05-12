@@ -19,9 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
@@ -32,12 +30,9 @@ import androidx.compose.foundation.layout.Arrangement
 import android.content.Context
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.Alignment
 import org.json.JSONArray
@@ -145,7 +140,6 @@ class MainActivity : ComponentActivity() {
         val eventsState = remember { mutableStateOf(emptyList<Event>()) }
         var eventsShown by remember { mutableStateOf(false) }
         var contactsShown by remember { mutableStateOf(false) }
-        var selectedItem: Any? by remember { mutableStateOf(null) }
         var selectedEvent by remember { mutableStateOf<Event?>(null) }
         var selectedContact by remember { mutableStateOf<Contact?>(null) }
 
@@ -478,13 +472,6 @@ class MainActivity : ComponentActivity() {
         phoneNumber: String,
         company: String
     ) {
-        val contactObject = JSONObject().apply {
-            put("prenom", contactName)
-            put("nom", lastName)
-            put("telephone", phoneNumber)
-            put("entreprise", company)
-        }
-
         try {
             val existingContacts = readContactsFromJson(context).toMutableList()
             val contactId = getLastContactId(context) + 1
@@ -516,13 +503,6 @@ class MainActivity : ComponentActivity() {
         eventLocation: String,
         contactsLinked: List<Int>
     ) {
-        val eventObject = JSONObject().apply {
-            put("eventName", eventName)
-            put("eventDate", eventDate)
-            put("eventLocation", eventLocation)
-            put("contactsLinked", JSONArray(contactsLinked))
-        }
-
         try {
             val existingEvents = readEventsFromJson(context).toMutableList()
             existingEvents.add(
