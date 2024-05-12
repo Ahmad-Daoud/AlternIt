@@ -15,12 +15,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Text
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.IOException
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import okhttp3.*
+import fi.iki.elonen.NanoHTTPD.*
 import android.content.Context
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import android.os.Environment
+import java.io.File
+import java.io.OutputStream
+import java.net.InetSocketAddress
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Row
@@ -74,10 +86,12 @@ fun EventList(events: List<Event>) {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun MyApp(context: Context) {
+    val apiService = remember { LocalApiService(context) }
     var showDialog by remember { mutableStateOf(false) }
     val contactsState = remember { mutableStateOf(emptyList<Contact>()) }
     val eventsState = remember { mutableStateOf(emptyList<Event>()) }
-
+    val contacts = remember { apiService.getContacts() }
+    val events = remember { apiService.getEvents() }
     LaunchedEffect(Unit) {
         refreshContactList(context, contactsState)
         refreshEventList(context, eventsState)
@@ -119,6 +133,31 @@ fun MyApp(context: Context) {
     }
 }
 
+class LocalApiService(private val context: Context) {
+    fun getContacts(): List<Contact>? {
+        val json = readAlternItJson(context, "contacts.json")
+        return Gson().fromJson(json, object : TypeToken<List<Contact>>() {}.type)
+    }
+
+    fun getEvents(): List<Event>? {
+        val json = readAlternItJson(context, "events.json")
+        return Gson().fromJson(json, object : TypeToken<List<Event>>() {}.type)
+    }
+}
+fun readAlternItJson(context: Context, fileName: String): String? {
+    return try {
+        val inputStream = context.assets.open(fileName)
+        val size = inputStream.available()
+        val buffer = ByteArray(size)
+        inputStream.read(buffer)
+        inputStream.close()
+        String(buffer, Charsets.UTF_8)
+    } catch (e: IOException) {
+        e.printStackTrace()
+        null
+    }
+}
+
 fun refreshContactList(context: Context, contactsState: MutableState<List<Contact>>) {
     contactsState.value = readContactsFromJson(context)
 }
@@ -151,9 +190,16 @@ enum class DialogType {
 
 fun readContactsFromJson(context: Context): List<Contact> {
     val contacts = mutableListOf<Contact>()
+    val client = OkHttpClient()
+    val request = Request.Builder()
+        .url("YOUR_CONTACTS_API_ENDPOINT")
+        .build()
+
     try {
-        val jsonString = context.openFileInput("contacts.json").bufferedReader().use { it.readText() }
+        val response: Response = client.newCall(request).execute()
+        val jsonString = response.body()?.string()
         val jsonArray = JSONArray(jsonString)
+
         for (i in 0 until jsonArray.length()) {
             val jsonObject = jsonArray.getJSONObject(i)
             val contact = Contact(
@@ -170,11 +216,19 @@ fun readContactsFromJson(context: Context): List<Contact> {
     }
     return contacts
 }
+
 fun readEventsFromJson(context: Context): List<Event> {
     val events = mutableListOf<Event>()
+    val client = OkHttpClient()
+    val request = Request.Builder()
+        .url("YOUR_EVENTS_API_ENDPOINT")
+        .build()
+
     try {
-        val jsonString = context.openFileInput("events.json").bufferedReader().use { it.readText() }
+        val response: Response = client.newCall(request).execute()
+        val jsonString = response.body()?.string()
         val jsonArray = JSONArray(jsonString)
+
         for (i in 0 until jsonArray.length()) {
             val jsonObject = jsonArray.getJSONObject(i)
             val event = Event(
