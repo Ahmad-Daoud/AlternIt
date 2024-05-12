@@ -13,6 +13,9 @@ Altern'it est une application Android développée dans le cadre d'un projet uni
 - **Ahmad Daoud**
 - **Gino Valton**
 
+## Notes pour le prof
+Nous avons utilisé le stockage android afin de stocker la liste des contacts et des evenements car nous n'avons pas accès à un serveur HTTP mais afin d'en avoir il suffit simplement de modifier les fonctions read/write Data from JSON
+
 ## Remarque
 Ce projet a été développé dans le cadre d'un cours universitaire et est à des fins éducatives uniquement. Toute utilisation commerciale ou autre utilisation est strictement interdite sans autorisation.
 
